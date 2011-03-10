@@ -84,8 +84,8 @@ trait BsonMetaRecord[BaseRecord <: BsonRecord[BaseRecord]] extends MetaRecord[Ba
           field.asInstanceOf[EnumNameTypedField[Enumeration]].valueBox foreach {
             v => dbo.add(f.name, v.toString)
           }
-        case field: MongoFieldFlavor[Any] =>
-          dbo.add(f.name, field.asInstanceOf[MongoFieldFlavor[Any]].asDBObject)
+        case field: MongoFieldFlavor[_] =>
+          dbo.add(f.name, field.asInstanceOf[MongoFieldFlavor[_]].asDBObject)
         case field => field.valueBox foreach (_.asInstanceOf[AnyRef] match {
           case null => dbo.add(f.name, null)
           case x if primitive_?(x.getClass) => dbo.add(f.name, x)

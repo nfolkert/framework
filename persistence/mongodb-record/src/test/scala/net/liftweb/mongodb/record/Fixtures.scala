@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package net.liftweb 
-package mongodb 
-package record 
-package fixtures 
+package net.liftweb
+package mongodb
+package record
+package fixtures
 
 import field._
 
@@ -334,6 +334,23 @@ class SubRecordTestRecord extends MongoRecord[SubRecordTestRecord] with MongoId[
 
 }
 object SubRecordTestRecord extends SubRecordTestRecord with MongoMetaRecord[SubRecordTestRecord] {
+  override def formats = allFormats
+}
+
+/*
+ * MongoRefFields
+ */
+class RefFieldTestRecord extends MongoRecord[RefFieldTestRecord] with MongoId[RefFieldTestRecord] {
+  def meta = RefFieldTestRecord
+
+  object mandatoryObjectIdRefField extends ObjectIdRefField(this, FieldTypeTestRecord)
+  //object mandatoryUUIDRefField extends UUIDRefField(this)
+  //object mandatoryStringRefField extends StringRefField(this, 100)
+  //object mandatoryIntRefField extends IntRefField(this)
+  //object mandatoryLongRefField extends LongRefField(this)
+}
+
+object RefFieldTestRecord extends RefFieldTestRecord with MongoMetaRecord[RefFieldTestRecord] {
   override def formats = allFormats
 }
 

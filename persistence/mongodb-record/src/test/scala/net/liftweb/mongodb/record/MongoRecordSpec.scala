@@ -194,7 +194,7 @@ object MongoRecordSpec extends Specification("MongoRecord Specification") with M
       .mandatoryObjectIdField(ObjectId.get)
       .mandatoryPatternField(Pattern.compile("^Mo", Pattern.CASE_INSENSITIVE))
       .mandatoryUUIDField(UUID.randomUUID)
-    
+
     /* This causes problems if MongoDB is not running */
     if (isMongoRunning) {
       mfttr.mandatoryDBRefField(DBRefTestRecord.createRecord.getRef)
@@ -205,7 +205,7 @@ object MongoRecordSpec extends Specification("MongoRecord Specification") with M
       .mandatoryIntListField(List(4, 5, 6))
       .mandatoryMongoJsonObjectListField(List(TypeTestJsonObject(1, "jsonobj1"), TypeTestJsonObject(2, "jsonobj2")))
       .mongoCaseClassListField(List(MongoCaseClassTestObject(1,"str")))
-      
+
     val mtr = MapTestRecord.createRecord
       .mandatoryStringMapField(Map("a" -> "abc", "b" -> "def", "c" -> "ghi"))
       .mandatoryIntMapField(Map("a" -> 4, "b" -> 5, "c" -> 6))
@@ -338,7 +338,7 @@ object MongoRecordSpec extends Specification("MongoRecord Specification") with M
       srtrAsJValue \\ "mandatoryBsonRecordListField" mustEqual srtrJson \\ "mandatoryBsonRecordListField"
       srtrAsJValue \\ "legacyOptionalBsonRecordListField" mustEqual srtrJson \\ "legacyOptionalBsonRecordListField"
     }
-    
+
     "convert Mongo type fields to JsExp" in {
       checkMongoIsRunning
 
@@ -447,7 +447,7 @@ object MongoRecordSpec extends Specification("MongoRecord Specification") with M
 
     "handle Box using JsonBoxSerializer" in {
       checkMongoIsRunning
-      
+
       val btr = BoxTestRecord.createRecord
       btr.jsonobjlist.set(
         BoxTestJsonObj("1", Empty, Full("Full String1"), Failure("Failure1")) ::
@@ -469,6 +469,17 @@ object MongoRecordSpec extends Specification("MongoRecord Specification") with M
         sortedList(0).boxFull must_== Full("Full String1")
         sortedList(0).boxFail must_== Failure("Failure1")
       }
+    }
+
+    "retrieve MongoRef objects properly" in {
+      checkMongoIsRunning
+
+      fttr.save
+      
+      val rftr = RefFieldTestRecord.createRecord
+      rftr.mandatoryObjectIdRefField(fttr.id)
+
+      rftr.mandatoryObjectIdRefField.obj mustEqual Full(fttr)
     }
 
   }
