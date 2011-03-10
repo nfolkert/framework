@@ -43,14 +43,12 @@ import net.liftweb.record._
 object MongoFieldSpec extends Specification("MongoField Specification") with MongoTestKit {
   import fixtures._
 
-  def passBasicTests[A](example: A, mandatory: MandatoryTypedField[A], legacyOptional: MandatoryTypedField[A])(implicit m: scala.reflect.Manifest[A]): Unit = {
-
-    val canCheckDefaultValues =
-      !mandatory.defaultValue.isInstanceOf[Date] && // don't try to use the default value of date/time typed fields, because it changes from moment to moment!
-      !mandatory.defaultValue.isInstanceOf[ObjectId] && // same with ObjectId
-      !mandatory.defaultValue.isInstanceOf[Pattern] &&
-      !mandatory.defaultValue.isInstanceOf[UUID] &&
-      !mandatory.defaultValue.isInstanceOf[DBRef]
+  def passBasicTests[A](
+    example: A,
+    mandatory: MandatoryTypedField[A],
+    legacyOptional: MandatoryTypedField[A],
+    canCheckDefaultValues: Boolean = true
+  )(implicit m: scala.reflect.Manifest[A]): Unit = {
 
     def commonBehaviorsForAllFlavors(field: MandatoryTypedField[A]) = {
 
@@ -180,7 +178,7 @@ object MongoFieldSpec extends Specification("MongoField Specification") with Mon
     val rec = MongoFieldTypeTestRecord.createRecord
     val now = new Date
     val nowStr = rec.meta.formats.dateFormat.format(now)
-    passBasicTests(now, rec.mandatoryDateField, rec.legacyOptionalDateField)
+    passBasicTests(now, rec.mandatoryDateField, rec.legacyOptionalDateField, false)
     passConversionTests(
       now,
       rec.mandatoryDateField,
@@ -196,7 +194,7 @@ object MongoFieldSpec extends Specification("MongoField Specification") with Mon
     if (isMongoRunning) { // Even if this gets skipped, the vals still get set.
       val rec = MongoFieldTypeTestRecord.createRecord
       val dbref = DBRefTestRecord.createRecord.getRef // This makes a call to MongoDB.use and needs a MongoDB connection.
-      passBasicTests(dbref, rec.mandatoryDBRefField, rec.legacyOptionalDBRefField)
+      passBasicTests(dbref, rec.mandatoryDBRefField, rec.legacyOptionalDBRefField, false)
     }
   }
 
@@ -216,7 +214,7 @@ object MongoFieldSpec extends Specification("MongoField Specification") with Mon
   "ObjectIdField" should {
     val rec = MongoFieldTypeTestRecord.createRecord
     val oid = ObjectId.get
-    passBasicTests(oid, rec.mandatoryObjectIdField, rec.legacyOptionalObjectIdField)
+    passBasicTests(oid, rec.mandatoryObjectIdField, rec.legacyOptionalObjectIdField, false)
     passConversionTests(
       oid,
       rec.mandatoryObjectIdField,
@@ -229,7 +227,7 @@ object MongoFieldSpec extends Specification("MongoField Specification") with Mon
   "PatternField" should {
     val rec = MongoFieldTypeTestRecord.createRecord
     val ptrn = Pattern.compile("^Mo", Pattern.CASE_INSENSITIVE)
-    passBasicTests(ptrn, rec.mandatoryPatternField, rec.legacyOptionalPatternField)
+    passBasicTests(ptrn, rec.mandatoryPatternField, rec.legacyOptionalPatternField, false)
     passConversionTests(
       ptrn,
       rec.mandatoryPatternField,
@@ -242,7 +240,7 @@ object MongoFieldSpec extends Specification("MongoField Specification") with Mon
   "UUIDField" should {
     val rec = MongoFieldTypeTestRecord.createRecord
     val uuid = UUID.randomUUID
-    passBasicTests(uuid, rec.mandatoryUUIDField, rec.legacyOptionalUUIDField)
+    passBasicTests(uuid, rec.mandatoryUUIDField, rec.legacyOptionalUUIDField, false)
     passConversionTests(
       uuid,
       rec.mandatoryUUIDField,
@@ -368,6 +366,46 @@ object MongoFieldSpec extends Specification("MongoField Specification") with Mon
         Empty
       )
     }
+  }
+  
+  "BsonRecordField" should {
+    "function correctly" in {
+      val rec = SubRecordTestRecord.createRecord
+      val subRec = SubRecord.createRecord.name("subrecord")
+      passBasicTests(subRec, rec.mandatoryBsonRecordField, rec.legacyOptionalBsonRecordField, false)
+      passConversionTests(
+        subRec,
+        rec.mandatoryBsonRecordField,
+        JsObj(("name", Str("subrecord"))),
+        JObject(List(
+          JField("name", JString("subrecord"))
+        )),
+        Empty
+      )
+    }
+  }
+  
+  "BsonRecordListField" should {
+    val rec = SubRecordTestRecord.createRecord
+    val lst = List(SubRecord.createRecord.name("subrec1"), SubRecord.createRecord.name("subrec2"))
+    passBasicTests(lst, rec.mandatoryBsonRecordListField, rec.legacyOptionalBsonRecordListField)
+    passConversionTests(
+      lst,
+      rec.mandatoryBsonRecordListField,
+      JsArray(
+        JsObj(("name", Str("subrec1"))),
+        JsObj(("name", Str("subrec2")))
+      ),
+      JArray(List(
+        JObject(List(
+          JField("name", JString("subrec1"))
+        )),
+        JObject(List(
+          JField("name", JString("subrec2"))
+        ))
+      )),
+      Empty
+    )
   }
 }
 
