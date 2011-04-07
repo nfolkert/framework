@@ -14,7 +14,7 @@
 package net.liftweb 
 package mongodb 
 
-import json.{Formats, MappingException, Serializer, TypeInfo}
+import json.{Formats, MappingException, Serializer, TypeInfo, DefaultFormats}
 import json.JsonAST._
 
 
@@ -111,3 +111,7 @@ class UUIDSerializer extends Serializer[UUID] {
   }
 }
 
+object MongoDefaultFormats extends DefaultFormats {
+  override val customSerializers = List(new ObjectIdSerializer, new PatternSerializer,
+    new DateSerializer, new UUIDSerializer)
+}

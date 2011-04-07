@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2011 WorldWide Conferencing, LLC
+ * Copyright 2011 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import net.liftweb.json.JsonAST.JObject
 package jobjectparserspec {
 
 
-case class IntCase(v: Int)
+  case class IntCase(v: Int)
   case class OptIntCase(vOpt: Option[Int])
   case class ListIntCase(vList: List[Int])
 
@@ -55,7 +55,7 @@ case class IntCase(v: Int)
 
 
 /**
- * Systems under specification for CustomSerializers.
+ * Systems under specification for JObjectParser.
  */
 object JObjectParserSpec extends Specification("JObjectParser Specification") {
 
