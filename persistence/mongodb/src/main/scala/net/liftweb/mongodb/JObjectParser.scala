@@ -75,6 +75,9 @@ object JObjectParser {
       trimArr(arr).foreach { a =>
         a match {
           case JArray(arr) => dbl.add(parseArray(arr, formats))
+          case j: JObject if isEncodedJObject(j, formats) => {
+            decodeObject(formats).orElse(failDecode)(j).map(dbl.add(_))
+          }
           case JObject(jo) => dbl.add(parseObject(jo, formats))
           case jv: JValue => dbl.add(renderValue(jv, formats))
         }
@@ -87,21 +90,32 @@ object JObjectParser {
       trimObj(obj).foreach { jf =>
         jf.value match {
           case JArray(arr) => dbo.put(jf.name, parseArray(arr, formats))
-          case JObject(JField("$oid", JString(s)) :: Nil) if (ObjectId.isValid(s)) =>
-            dbo.put(jf.name, new ObjectId(s))
-          case JObject(JField("$regex", JString(s)) :: JField("$flags", JInt(f)) :: Nil) =>
-            dbo.put(jf.name, Pattern.compile(s, f.intValue))
-          case JObject(JField("$dt", JString(s)) :: Nil) =>
-            formats.dateFormat.parse(s) foreach {
-              d => dbo.put(jf.name, d)
-            }
-          case JObject(JField("$uuid", JString(s)) :: Nil) =>
-            dbo.put(jf.name, UUID.fromString(s))
+          case j: JObject if isEncodedJObject(j, formats) => {
+            decodeObject(formats).orElse(failDecode)(j).map(dbo.put(jf.name, _))
+          }
           case JObject(jo) => dbo.put(jf.name, parseObject(jo, formats))
           case jv: JValue => dbo.put(jf.name, renderValue(jv, formats))
         }
       }
       dbo
+    }
+
+    private def isEncodedJObject(obj: JObject, formats: Formats): Boolean = {
+      decodeObject(formats).isDefinedAt(obj)
+    }
+
+    private def decodeObject(formats: Formats): PartialFunction[JObject, Option[AnyRef]] = {
+      case JObject(JField("$oid", JString(s)) :: Nil) if (ObjectId.isValid(s)) =>
+        Some(new ObjectId(s))
+      case JObject(JField("$regex", JString(s)) :: JField("$flags", JInt(f)) :: Nil) =>
+        Some(Pattern.compile(s, f.intValue))
+      case JObject(JField("$dt", JString(s)) :: Nil) =>
+        formats.dateFormat.parse(s)
+      case JObject(JField("$uuid", JString(s)) :: Nil) =>
+        Some(UUID.fromString(s))
+    }
+    private def failDecode: PartialFunction[JObject, Option[AnyRef]] = {
+      case x => throw new IllegalStateException("Could not decode object " + x)
     }
 
     private def renderValue(jv: JValue, formats: Formats): Object = jv match {
